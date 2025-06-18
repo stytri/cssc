@@ -19,6 +19,7 @@ options:
                         sh    shell style comments
                         asm   assembler style comments
   -s, --seperator TEXT  character seperator is TEXT
+  -n, --no-nul          do not nul terminate string
 ```
 
 ## Building

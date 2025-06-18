@@ -23,7 +23,7 @@ static void license(void) {
 	puts("SOFTWARE.");
 }
 #ifndef VERSION
-#	define VERSION  1.0.0
+#	define VERSION  1.1.0
 #endif
 //
 // Build with https://github.com/stytri/m
@@ -114,6 +114,7 @@ static struct optget options[] = {
 	{  0, "",                     "sh    shell style comments" },
 	{  0, "",                     "asm   assembler style comments" },
 	{ 12, "-s, --seperator TEXT", "character seperator is TEXT" },
+	{ 13, "-n, --no-nul",         "do not nul terminate string" },
 };
 static size_t const n_options = (sizeof(options) / sizeof(options[0]));
 
@@ -136,6 +137,7 @@ main(
 	char const *separator = ",";
 	char        comment = '/';
 	bool        preprocess = true;
+	bool        nulterminate = true;
 
 	int argi = 1;
 	while((argi < argc) && (*argv[argi] == '-')) {
@@ -176,6 +178,9 @@ main(
 				break;
 			case 12:
 				separator = argv[argi];
+				break;
+			case 13:
+				nulterminate = false;
 				break;
 			default:
 				errorf("invalid option: %s", args);
@@ -235,17 +240,22 @@ main(
 							continue;
 						}
 					} else {
-						if(quoted++ > 1) {
-							fputs(separator, out);
-						}
 						if(c == '"') {
-							fputs("'\0'", out);
+							if(nulterminate) {
+								if(quoted++ > 1) {
+									fputs(separator, out);
+								}
+								fputs("'\\0'", out);
+							}
 							quoted = 0;
 							continue;
 						}
-					}
-					if(quoted) {
-						fputc('\'', out);
+						if(quoted++ > 1) {
+							fputs(separator, out);
+						}
+						if(quoted) {
+							fputc('\'', out);
+						}
 					}
 					switch(c) {
 					case '\\':
