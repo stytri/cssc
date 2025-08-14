@@ -117,6 +117,7 @@ static struct optget options[] = {
 	{ 12, "-s, --seperator TEXT", "character seperator is TEXT" },
 	{ 13, "-n, --no-nul",         "do not nul terminate string" },
 	{ 14, "-q, --ignore-single-quote", "ignore single quotes" },
+	{ 15, "-d, --digit-separator CHAR", "digits in numbers can be separated by CHAR" },
 };
 static size_t const n_options = (sizeof(options) / sizeof(options[0]));
 
@@ -141,6 +142,7 @@ main(
 	bool        preprocess = true;
 	bool        nulterminate = true;
 	bool        singlequote = true;
+	char        digitseparator = 0;
 
 	int argi = 1;
 	while((argi < argc) && (*argv[argi] == '-')) {
@@ -187,6 +189,9 @@ main(
 				break;
 			case 14:
 				singlequote = false;
+				break;
+			case 15:
+				digitseparator = *argv[argi];
 				break;
 			default:
 				errorf("invalid option: %s", args);
@@ -295,9 +300,9 @@ main(
 							fputc('\\', out);
 						}
 						break;
-					case '\t': fputc('\\', out); c = 't'; break;
-					case '\n': fputc('\\', out); c = 'n'; break;
-					case '\r': fputc('\\', out); c = 'r'; break;
+					case '\t': fputc('\\', out); fputc('t', out); break;
+					case '\n': fputc('\\', out); fputc('n', out); break;
+					case '\r': fputc('\\', out); fputc('r', out); break;
 					default  :
 						if(!isprint(c)) {
 							fputc('\\', out);
@@ -363,6 +368,38 @@ main(
 					if(c == EOF) {
 						break;
 					}
+				}
+				if(digitseparator && isdigit(c)) {
+					int (*is_digit)(int) = isdigit;
+					if(c == '0') {
+						do {
+							fputc(c, out);
+							c = fgetc(in);
+						} while(c == '0')
+							;
+						switch(tolower(c)) {
+						case 'x':
+							is_digit = isxdigit;
+							[[fallthrough]];
+						case 'b':
+							c = fgetc(in);
+							break;
+						default :
+							break;
+						}
+					} else {
+						fputc(c, out);
+						c = fgetc(in);
+					}
+					while(is_digit(c) || (c == digitseparator)) {
+						fputc(c, out);
+						c = fgetc(in);
+					}
+					if(c == EOF) {
+						break;
+					}
+					ungetc(c, in);
+					continue;
 				}
 				fputc(c, out);
 				if(c == '\n') {
