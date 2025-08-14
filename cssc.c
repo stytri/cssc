@@ -23,7 +23,7 @@ static void license(void) {
 	puts("SOFTWARE.");
 }
 #ifndef VERSION
-#	define VERSION  1.1.1
+#	define VERSION  1.2.0
 #endif
 //
 // Build with https://github.com/stytri/m
@@ -67,6 +67,7 @@ static void version(void) {
 #define VERSIONTOSTR(VERSIONTOSTR__version)  VERSION__STR(VERSIONTOSTR__version)
 	puts("## Version "VERSIONTOSTR(VERSION));
 }
+static void list_named_characters(void);
 static void readme(char *arg0) {
 	int         n;
 	char const *file = getfilename(arg0, &n);
@@ -80,6 +81,9 @@ static void readme(char *arg0) {
 	usage(arg0, stdout);
 	puts("```");
 	puts("");
+	puts("## Named Characters");
+	list_named_characters();
+	puts("");
 	puts("## Building");
 	puts("");
 	puts("Uses [HOL](https://github.com/stytri/hol) and [defer](https://github.com/stytri/defer).");
@@ -92,6 +96,70 @@ static void readme(char *arg0) {
 
 #include <hol/holibc.h>  // https://github.com/stytri/hol
 #include <defer.h>       // https://github.com/stytri/defer
+
+//------------------------------------------------------------------------------
+
+static struct {
+	char const *ct;
+	int         c;
+} const named_char[] = {
+	{ "amp"   , '&'  },
+	{ "apos"  , '\'' },
+	{ "ast"   , '*'  },
+	{ "bsol"  , '\\' },
+	{ "colon" , ':'  },
+	{ "comma" , ','  },
+	{ "commat", '@'  },
+	{ "dollar", '&'  },
+	{ "equals", '='  },
+	{ "excl"  , '!'  },
+	{ "hat"   , '^'  },
+	{ "lbrace", '{'  },
+	{ "lbrack", '['  },
+	{ "lowbar", '_'  },
+	{ "lpar"  , '('  },
+	{ "lt"    , '<'  },
+	{ "gt"    , '>'  },
+	{ "minus" , '-'  },
+	{ "num"   , '#'  },
+	{ "percnt", '%'  },
+	{ "period", '.'  },
+	{ "plus"  , '+'  },
+	{ "quest" , '?'  },
+	{ "quot"  , '"'  },
+	{ "rbrace", '}'  },
+	{ "rbrack", ']'  },
+	{ "rpar"  , ')'  },
+	{ "semi"  , ';'  },
+	{ "sol"   , '/'  },
+	{ "tilde" , '~'  },
+	{ "vert"  , '|'  },
+};
+static void list_named_characters(void) {
+	for(size_t i = 0; i < (sizeof(named_char)/sizeof(*named_char)); i++) {
+		printf("-\t`&%s;` yields character `%c`\n", named_char[i].ct, named_char[i].c);
+	}
+}
+static int get_named_character(char const *cs, int c) {
+	int n = strlen(cs);
+	if((n == 1) && (ispunct(c))) {
+		return *cs;
+	}
+	if((n > 0) && (*cs == '&')) {
+		cs++;
+		n--;
+	}
+	if((n > 0) && (cs[n - 1] == ';')) {
+		n--;
+	}
+	if(n > 0) for(size_t i = 0; i < (sizeof(named_char)/sizeof(*named_char)); i++) {
+		int m = strlen(named_char[i].ct);
+		if((n == m) && (strncmp(cs, named_char[i].ct, m) == 0)) {
+			return named_char[i].c;
+		}
+	}
+	return c;
+}
 
 //------------------------------------------------------------------------------
 
@@ -118,6 +186,7 @@ static struct optget options[] = {
 	{ 13, "-n, --no-nul",         "do not nul terminate string" },
 	{ 14, "-q, --ignore-single-quote", "ignore single quotes" },
 	{ 15, "-d, --digit-separator CHAR", "digits in numbers can be separated by CHAR" },
+	{  0, "CHAR:", "Either a single punctuation character, or, named character (see README)" },
 };
 static size_t const n_options = (sizeof(options) / sizeof(options[0]));
 
@@ -178,7 +247,7 @@ main(
 				} else if(strcmp(argv[argi], "asm") == 0) {
 					comment = ';';
 				} else {
-					comment = *argv[argi];
+					comment = get_named_character(argv[argi], comment);
 				}
 				break;
 			case 12:
@@ -191,7 +260,7 @@ main(
 				singlequote = false;
 				break;
 			case 15:
-				digitseparator = *argv[argi];
+				digitseparator = get_named_character(argv[argi], digitseparator);
 				break;
 			default:
 				errorf("invalid option: %s", args);
