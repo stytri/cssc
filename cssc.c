@@ -23,7 +23,7 @@ static void license(void) {
 	puts("SOFTWARE.");
 }
 #ifndef VERSION
-#	define VERSION  1.1.0
+#	define VERSION  1.1.1
 #endif
 //
 // Build with https://github.com/stytri/m
@@ -113,8 +113,10 @@ static struct optget options[] = {
 	{  0, "",                     "C     C style comments" },
 	{  0, "",                     "sh    shell style comments" },
 	{  0, "",                     "asm   assembler style comments" },
+	{  0, "",                     "CHAR  a specified single CHARacter" },
 	{ 12, "-s, --seperator TEXT", "character seperator is TEXT" },
 	{ 13, "-n, --no-nul",         "do not nul terminate string" },
+	{ 14, "-q, --ignore-single-quote", "ignore single quotes" },
 };
 static size_t const n_options = (sizeof(options) / sizeof(options[0]));
 
@@ -138,6 +140,7 @@ main(
 	char        comment = '/';
 	bool        preprocess = true;
 	bool        nulterminate = true;
+	bool        singlequote = true;
 
 	int argi = 1;
 	while((argi < argc) && (*argv[argi] == '-')) {
@@ -181,6 +184,9 @@ main(
 				break;
 			case 13:
 				nulterminate = false;
+				break;
+			case 14:
+				singlequote = false;
 				break;
 			default:
 				errorf("invalid option: %s", args);
@@ -319,7 +325,7 @@ main(
 					continue;
 				}
 				if(c == '\'') {
-					character = true;
+					character = singlequote;
 					fputc(c, out);
 					continue;
 				}
